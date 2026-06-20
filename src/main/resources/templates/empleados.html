@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <th:block th:replace="~{layout :: head-assets}" />
+    <title>Lista de Empleados — Sistema de Planillas ADOC</title>
+</head>
+<body>
+
+    <!-- ═══ Sidebar ═══ -->
+    <nav th:replace="~{layout :: sidebar('empleados')}"></nav>
+
+    <!-- ═══ Main Area ═══ -->
+    <div class="main-area">
+
+        <!-- ═══ Header ═══ -->
+        <header th:replace="~{layout :: header}"></header>
+
+        <!-- ═══ Content ═══ -->
+        <main class="content-area">
+
+            <div class="page-header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem;">
+                <div>
+                    <h1 class="page-title">Directorio de Empleados</h1>
+                    <p class="page-subtitle" style="margin-bottom: 0;">Gestión general del personal</p>
+                </div>
+                <div>
+                    <a th:href="@{/empleados/nuevo}" class="btn-action" style="display: inline-flex; width: auto; padding: 0.6rem 1.2rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="margin-right: 6px;">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                        Nuevo Empleado
+                    </a>
+                </div>
+            </div>
+
+            <div class="card animate-in">
+                <div class="card-body" style="padding: 0;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>DUI</th>
+                                <th>Cargo</th>
+                                <th>Departamento</th>
+                                <th>Fecha Ingreso</th>
+                                <th>Salario</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="emp : ${empleados.content}">
+                                <td th:text="${emp.nombreCompleto}">Nombre Completo</td>
+                                <td th:text="${emp.dui}">DUI</td>
+                                <td th:text="${emp.cargo}">Cargo</td>
+                                <td th:text="${emp.departamento}">Departamento</td>
+                                <td th:text="${emp.fechaIngreso != null ? #temporals.format(emp.fechaIngreso, 'dd/MM/yyyy') : 'N/A'}">Fecha</td>
+                                <td th:text="${'$' + #numbers.formatDecimal(emp.salarioBase, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${emp.estado.name() == 'ACTIVO' ? 'badge-success' : 
+                                                           (emp.estado.name() == 'INACTIVO' ? 'badge-danger' : 'badge-warning')}"
+                                          th:text="${emp.estado}">ESTADO
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr th:if="${empleados.empty}">
+                                <td colspan="7" style="text-align: center; padding: 2rem; color: #888;">
+                                    No hay empleados registrados actualmente.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <ul class="pagination" th:if="${empleados.totalPages > 1}">
+                        <li class="page-item" th:classappend="${empleados.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/empleados(page=${empleados.number - 1})}" tabindex="-1">&laquo;</a>
+                        </li>
+                        <li th:each="i : ${#numbers.sequence(0, empleados.totalPages - 1)}" 
+                            class="page-item" 
+                            th:classappend="${empleados.number == i} ? 'active'">
+                            <a class="page-link" th:href="@{/empleados(page=${i})}" th:text="${i + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${empleados.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/empleados(page=${empleados.number + 1})}">&raquo;</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <th:block th:replace="~{layout :: head-assets}" />
+    <title>Historial de Planillas — Sistema de Planillas ADOC</title>
+</head>
+<body>
+
+    <!-- ═══ Sidebar ═══ -->
+    <nav th:replace="~{layout :: sidebar('planillas')}"></nav>
+
+    <!-- ═══ Main Area ═══ -->
+    <div class="main-area">
+
+        <!-- ═══ Header ═══ -->
+        <header th:replace="~{layout :: header}"></header>
+
+        <!-- ═══ Content ═══ -->
+        <main class="content-area">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div>
+                    <h1 class="page-title">Historial de Planillas</h1>
+                    <p class="page-subtitle">Lista de todas las planillas generadas en el sistema.</p>
+                </div>
+                <a th:href="@{/planillas/generar}" class="btn-action" style="text-decoration: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    Generar Nueva
+                </a>
+            </div>
+
+            <div class="card animate-in">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    </svg>
+                    Planillas Generadas
+                </div>
+                <div class="card-body" style="padding: 0; overflow-x: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Periodo</th>
+                                <th>Tipo</th>
+                                <th>Quincena</th>
+                                <th>Empleados</th>
+                                <th>Fecha Generación</th>
+                                <th style="text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="p : ${planillas.content}">
+                                <td style="font-weight: 600;" th:text="${p.periodo}">2026-06</td>
+                                <td>
+                                    <span class="badge" 
+                                          th:classappend="${p.tipoPlanilla.name() == 'ORDINARIA'} ? 'badge-primary' : 'badge-warning'" 
+                                          th:text="${p.tipoPlanilla}">ORDINARIA</span>
+                                </td>
+                                <td th:text="${p.quincena > 0 ? p.quincena : 'N/A'}">1</td>
+                                <td th:text="${#lists.size(p.detalles)}">0</td>
+                                <td th:text="${#temporals.format(p.fechaGeneracion, 'dd/MM/yyyy')}">18/06/2026</td>
+                                <td style="text-align: right;">
+                                    <a th:href="@{/planillas(id=${p.id})}" class="btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; text-decoration: none;">Ver Detalle</a>
+                                </td>
+                            </tr>
+                            <tr th:if="${planillas.empty}">
+                                <td colspan="6" style="text-align: center; padding: 2rem; color: #888;">No hay planillas generadas todavía.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <ul class="pagination" th:if="${planillas.totalPages > 1}">
+                        <li class="page-item" th:classappend="${planillas.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/planillas(page=${planillas.number - 1})}" tabindex="-1">&laquo;</a>
+                        </li>
+                        <li th:each="i : ${#numbers.sequence(0, planillas.totalPages - 1)}" 
+                            class="page-item" 
+                            th:classappend="${planillas.number == i} ? 'active'">
+                            <a class="page-link" th:href="@{/planillas(page=${i})}" th:text="${i + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${planillas.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/planillas(page=${planillas.number + 1})}">&raquo;</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>

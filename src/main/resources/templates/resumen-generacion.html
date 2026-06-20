@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <th:block th:replace="~{layout :: head-assets}" />
+    <title>Resumen de Generación — Sistema de Planillas ADOC</title>
+    <style>
+        .resumen-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e6eb;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .resumen-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .icon-success {
+            color: #10b981;
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+        }
+
+        .stat-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .omitidos-section {
+            margin-top: 2rem;
+        }
+
+        .omitidos-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #b91c1c;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .omitidos-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .omitidos-list li {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #fecaca;
+            background-color: #fef2f2;
+            color: #991b1b;
+            font-size: 0.95rem;
+        }
+
+        .omitidos-list li:last-child {
+            border-bottom: none;
+        }
+
+        .actions-footer {
+            margin-top: 2.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══ Sidebar ═══ -->
+    <nav th:replace="~{layout :: sidebar('planillas')}"></nav>
+
+    <!-- ═══ Main Area ═══ -->
+    <div class="main-area">
+
+        <!-- ═══ Header ═══ -->
+        <header th:replace="~{layout :: header}"></header>
+
+        <!-- ═══ Content ═══ -->
+        <main class="content-area">
+            <h1 class="page-title">Resultado de Generación</h1>
+            
+            <div class="resumen-card animate-in" th:if="${resultadoGeneracion != null}">
+                <div class="resumen-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon-success" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <h2 style="margin:0; color:#1e1e2d;">Proceso Finalizado</h2>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-number" th:text="${resultadoGeneracion.empleadosGenerados}">0</div>
+                    <div class="stat-label">Empleados Procesados Exitosamente</div>
+                </div>
+
+                <div class="omitidos-section" th:if="${not #lists.isEmpty(resultadoGeneracion.empleadosOmitidos)}">
+                    <div class="omitidos-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        Empleados Omitidos (<span th:text="${#lists.size(resultadoGeneracion.empleadosOmitidos)}">0</span>)
+                    </div>
+                    <ul class="omitidos-list">
+                        <li th:each="omitido : ${resultadoGeneracion.empleadosOmitidos}" th:text="${omitido}">Empleado X - Motivo</li>
+                    </ul>
+                </div>
+
+                <div class="actions-footer">
+                    <a th:href="@{/planillas/generar}" class="btn-outline" style="text-decoration:none; padding:0.75rem 1.5rem; border:1px solid #d1d5db; color:#374151; border-radius:6px; font-weight:600;">Generar Otra Planilla</a>
+                    
+                    <a th:if="${resultadoGeneracion.planillaGenerada != null}" 
+                       th:href="@{/planillas(id=${resultadoGeneracion.planillaGenerada.id})}" 
+                       class="btn-action" style="text-decoration:none;">
+                        Ver Detalle de Planilla
+                    </a>
+                </div>
+            </div>
+
+            <div th:if="${resultadoGeneracion == null}" class="resumen-card">
+                <p>No hay resultados para mostrar.</p>
+                <a th:href="@{/dashboard}" class="btn-action">Volver al Dashboard</a>
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>

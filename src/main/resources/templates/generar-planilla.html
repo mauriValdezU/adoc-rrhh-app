@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <th:block th:replace="~{layout :: head-assets}" />
+    <title>Generar Planilla — Sistema de Planillas ADOC</title>
+    <style>
+        .form-section {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #e2e6eb;
+            margin-bottom: 2rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #1e1e2d;
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+            color: #374151;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #C8102E;
+            box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.1);
+        }
+
+        .empleados-section {
+            background-color: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e6eb;
+            overflow: hidden;
+        }
+
+        .empleados-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e6eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .empleados-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+            color: #1e1e2d;
+        }
+
+        .actions-footer {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .btn-outline {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid #d1d5db;
+            background: transparent;
+            color: #374151;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-outline:hover {
+            background-color: #f3f4f6;
+        }
+
+        .error-message {
+            background-color: #fef2f2;
+            color: #b91c1c;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+            border: 1px solid #f87171;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══ Sidebar ═══ -->
+    <nav th:replace="~{layout :: sidebar('planillas')}"></nav>
+
+    <!-- ═══ Main Area ═══ -->
+    <div class="main-area">
+
+        <!-- ═══ Header ═══ -->
+        <header th:replace="~{layout :: header}"></header>
+
+        <!-- ═══ Content ═══ -->
+        <main class="content-area">
+            <h1 class="page-title">Generar Nueva Planilla</h1>
+            <p class="page-subtitle">Selecciona los parámetros y los empleados a procesar.</p>
+
+            <div th:if="${error}" class="error-message" th:text="${error}"></div>
+
+            <form th:action="@{/planillas/generar}" method="post">
+                <div class="form-section animate-in">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="tipoPlanilla">Tipo de Planilla</label>
+                            <select id="tipoPlanilla" name="tipoPlanilla" class="form-control" required onchange="toggleQuincena()">
+                                <option value="ORDINARIA">Planilla Ordinaria</option>
+                                <option value="AGUINALDO">Aguinaldo</option>
+                                <option value="VACACIONES">Vacaciones</option>
+                                <option value="PLANILLA_25">Planilla 25 (Bono)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Periodo</label>
+                            <input type="hidden" id="periodo" name="periodo" required>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <select id="periodoAnio" class="form-control" onchange="actualizarPeriodo()" style="flex: 1;">
+                                    <option th:each="anio : ${#numbers.sequence(#dates.year(#dates.createNow()) + 1, 1970)}" 
+                                            th:value="${anio}" 
+                                            th:text="${anio}"
+                                            th:selected="${anio == #dates.year(#dates.createNow())}"></option>
+                                </select>
+                                <select id="periodoMes" class="form-control" onchange="actualizarPeriodo()" style="flex: 1;">
+                                    <option value="01">01 - Enero</option>
+                                    <option value="02">02 - Febrero</option>
+                                    <option value="03">03 - Marzo</option>
+                                    <option value="04">04 - Abril</option>
+                                    <option value="05">05 - Mayo</option>
+                                    <option value="06">06 - Junio</option>
+                                    <option value="07">07 - Julio</option>
+                                    <option value="08">08 - Agosto</option>
+                                    <option value="09">09 - Septiembre</option>
+                                    <option value="10">10 - Octubre</option>
+                                    <option value="11">11 - Noviembre</option>
+                                    <option value="12">12 - Diciembre</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" id="quincenaGroup">
+                            <label class="form-label" for="quincena">Quincena</label>
+                            <select id="quincena" name="quincena" class="form-control">
+                                <option value="1">Primera Quincena (1 - 15)</option>
+                                <option value="2">Segunda Quincena (16 - 30/31)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="empleados-section animate-in" style="animation-delay: 0.1s;">
+                    <div class="empleados-header">
+                        <h2 class="empleados-title">Empleados Activos</h2>
+                        <div>
+                            <button type="button" class="btn-outline" onclick="toggleAllCheckboxes(true)" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Seleccionar Todos</button>
+                            <button type="button" class="btn-outline" onclick="toggleAllCheckboxes(false)" style="padding: 0.5rem 1rem; font-size: 0.85rem; margin-left: 0.5rem;">Deseleccionar Todos</button>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding: 0; overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px; text-align: center;">Incluir</th>
+                                    <th>Nombre del Empleado</th>
+                                    <th>Departamento</th>
+                                    <th>Cargo</th>
+                                    <th>Salario Base</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="emp : ${empleados}">
+                                    <td style="text-align: center;">
+                                        <input type="checkbox" name="empleadoIds" th:value="${emp.id}" checked="checked" style="width: 18px; height: 18px; cursor: pointer;">
+                                    </td>
+                                    <td th:text="${emp.nombreCompleto}">Juan Perez</td>
+                                    <td th:text="${emp.departamento}">Ventas</td>
+                                    <td th:text="${emp.cargo}">Vendedor</td>
+                                    <td th:text="${'$' + #numbers.formatDecimal(emp.salarioBase, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(empleados)}">
+                                    <td colspan="5" style="text-align: center; padding: 2rem; color: #888;">No hay empleados activos en el sistema.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="actions-footer">
+                    <a th:href="@{/dashboard}" class="btn-outline">Cancelar</a>
+                    <button type="submit" class="btn-action">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                        </svg>
+                        Generar Planilla Seleccionada
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script>
+        function toggleQuincena() {
+            const tipo = document.getElementById('tipoPlanilla').value;
+            const group = document.getElementById('quincenaGroup');
+            const mesSelect = document.getElementById('periodoMes');
+            if (tipo === 'ORDINARIA') {
+                group.style.display = 'flex';
+                mesSelect.style.display = 'block';
+            } else {
+                group.style.display = 'none';
+                mesSelect.style.display = 'none';
+            }
+            actualizarPeriodo();
+        }
+
+        function actualizarPeriodo() {
+            const tipo = document.getElementById('tipoPlanilla').value;
+            const anio = document.getElementById('periodoAnio').value;
+            const mes = document.getElementById('periodoMes').value;
+            const periodoHidden = document.getElementById('periodo');
+            
+            if (tipo === 'ORDINARIA') {
+                periodoHidden.value = anio + '-' + mes;
+            } else {
+                periodoHidden.value = anio;
+            }
+        }
+
+        function toggleAllCheckboxes(checked) {
+            const checkboxes = document.querySelectorAll('input[name="empleadoIds"]');
+            checkboxes.forEach(cb => cb.checked = checked);
+        }
+        
+        // Inicializar estado
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            document.getElementById('periodoMes').value = month;
+            
+            toggleQuincena();
+        });
+    </script>
+</body>
+</html>

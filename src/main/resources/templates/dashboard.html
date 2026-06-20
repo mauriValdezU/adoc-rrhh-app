@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <th:block th:replace="~{layout :: head-assets}" />
+    <title>Dashboard — Sistema de Planillas ADOC</title>
+    <meta name="description" content="Panel de control del Sistema de Gestión de Planillas ADOC">
+</head>
+<body>
+
+    <!-- ═══ Sidebar ═══ -->
+    <nav th:replace="~{layout :: sidebar('inicio')}"></nav>
+
+    <!-- ═══ Main Area ═══ -->
+    <div class="main-area">
+
+        <!-- ═══ Header ═══ -->
+        <header th:replace="~{layout :: header}"></header>
+
+        <!-- ═══ Content ═══ -->
+        <main class="content-area">
+
+            <h1 class="page-title">Panel de Control</h1>
+            <p class="page-subtitle">Resumen general del sistema de planillas — Periodo <span th:text="${periodoActual}">2026-06</span></p>
+
+            <!-- ─── Metric Cards ───────────────────────────────────── -->
+            <div class="metrics-grid">
+
+                <!-- Total Empleados -->
+                <div class="metric-card animate-in">
+                    <div class="metric-icon red">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                        </svg>
+                    </div>
+                    <div class="metric-value" th:text="${totalEmpleados}">0</div>
+                    <div class="metric-label">Total Empleados</div>
+                </div>
+
+                <!-- Planilla del Periodo -->
+                <div class="metric-card animate-in">
+                    <div class="metric-icon blue">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                        </svg>
+                    </div>
+                    <div class="metric-value" th:text="${totalPlanilla}">$0.00</div>
+                    <div class="metric-label">Planilla del Periodo</div>
+                </div>
+
+                <!-- Deducciones -->
+                <div class="metric-card animate-in">
+                    <div class="metric-icon amber">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2z"/>
+                        </svg>
+                    </div>
+                    <div class="metric-value" th:text="${totalDeducciones}">$0.00</div>
+                    <div class="metric-label">Deducciones</div>
+                </div>
+
+                <!-- Planillas Procesadas -->
+                <div class="metric-card animate-in">
+                    <div class="metric-icon green">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-2 16l-4-4 1.41-1.41L12 15.17l4.59-4.58L18 12l-6 6zm-2-8V3.5L18.5 12H10z"/>
+                        </svg>
+                    </div>
+                    <div class="metric-value" th:text="${planillasProcesadas}">0</div>
+                    <div class="metric-label">Planillas Procesadas</div>
+                </div>
+            </div>
+
+            <!-- ─── Two-column grid ────────────────────────────────── -->
+            <div class="dashboard-grid">
+
+                <!-- Left Column: Actividad Reciente -->
+                <div class="card">
+                    <div class="card-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+                        </svg>
+                        Actividad Reciente
+                    </div>
+                    <div class="card-body">
+                        <div class="activity-item">
+                            <span class="activity-dot info"></span>
+                            <span class="activity-text">Sistema inicializado correctamente</span>
+                            <span class="activity-time">Hoy</span>
+                        </div>
+                        <div class="activity-item">
+                            <span class="activity-dot success"></span>
+                            <span class="activity-text">Base de datos conectada</span>
+                            <span class="activity-time">Hoy</span>
+                        </div>
+                        <div class="activity-item">
+                            <span class="activity-dot pending"></span>
+                            <span class="activity-text">Pendiente: registrar empleados para generar planilla</span>
+                            <span class="activity-time">Pendiente</span>
+                        </div>
+                    </div>
+                </div>
+
+                    <!-- Right Column: Acciones Rápidas + Normativa -->
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                    <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                                Acciones Rápidas
+                            </div>
+                            <div class="card-body">
+                                <div class="quick-actions">
+                                    <a th:href="@{/planillas/generar}" class="btn-action" style="width: 100%; text-decoration: none; display: flex; justify-content: center; align-items: center;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="margin-right: 8px;">
+                                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                                        </svg>
+                                        Generar Nueva Planilla
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                    <!-- Normativa Box -->
+                    <div class="normativa-box" style="margin-top: 1.25rem;">
+                        <div class="normativa-title">Normativa Aplicada</div>
+                        <div class="normativa-text">
+                            Artículos de Ley vigentes para descuentos. Fecha de corte de Aguinaldo
+                            estipulada según código. Techo exento de renta para aguinaldos vigente.
+                            Aportaciones patronales calculadas: ISSS (7.5%) y AFP (8.75%).
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>
