@@ -58,8 +58,11 @@
                                 </td>
                                 <td th:text="${#lists.size(p.detalles)}">0</td>
                                 <td th:text="${#temporals.format(p.fechaGeneracion, 'dd/MM/yyyy')}">18/06/2026</td>
-                                <td style="text-align: right;">
+                                <td style="text-align: right; display: flex; justify-content: flex-end; gap: 0.5rem; align-items: center;">
                                     <a th:href="@{/planillas(id=${p.id})}" class="btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; text-decoration: none;">Ver Detalle</a>
+                                    <form th:id="'form-eliminar-' + ${p.id}" th:action="@{/planillas/{id}/eliminar(id=${p.id})}" method="post" style="display:inline;">
+                                        <button type="button" class="btn" style="background-color: #e63946; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; transition: background-color 0.2s; box-shadow: 0 2px 4px rgba(230, 57, 70, 0.2);" onmouseover="this.style.backgroundColor='#d62828'" onmouseout="this.style.backgroundColor='#e63946'" th:onclick="'confirmarEliminacion(' + ${p.id} + ')'">Eliminar</button>
+                                    </form>
                                 </td>
                             </tr>
                             <tr th:if="${planillas.empty}">
@@ -87,5 +90,28 @@
         </main>
     </div>
 
+    <script>
+        function confirmarEliminacion(id) {
+            Swal.fire({
+                title: '¿Eliminar Planilla?',
+                text: "Esta acción borrará permanentemente la planilla y todos los cálculos asociados. ¡No podrás revertirlo!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e63946',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                background: '#ffffff',
+                customClass: {
+                    title: 'swal2-title-custom',
+                    popup: 'swal2-popup-custom'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('form-eliminar-' + id).submit();
+                }
+            })
+        }
+    </script>
 </body>
 </html>

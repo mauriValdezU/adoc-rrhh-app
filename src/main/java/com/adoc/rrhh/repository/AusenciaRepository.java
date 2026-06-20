@@ -20,7 +20,10 @@ public interface AusenciaRepository extends JpaRepository<Ausencia, Long> {
 
     List<Ausencia> findByEstadoAndTipoAusencia(EstadoAusencia estado, TipoAusencia tipoAusencia);
 
-    List<Ausencia> findByEmpleadoIdAndFechaInicioBetween(Long empleadoId, LocalDate desde, LocalDate hasta);
+    @org.springframework.data.jpa.repository.Query("SELECT a FROM Ausencia a WHERE a.empleado.id = :empleadoId AND a.fechaInicio <= :hasta AND a.fechaFin >= :desde")
+    List<Ausencia> findOverlappingAusencias(@org.springframework.data.repository.query.Param("empleadoId") Long empleadoId, 
+                                            @org.springframework.data.repository.query.Param("desde") LocalDate desde, 
+                                            @org.springframework.data.repository.query.Param("hasta") LocalDate hasta);
 
     long countByEmpleadoIdAndTipoAusenciaAndFechaInicioBetween(
             Long empleadoId, TipoAusencia tipoAusencia, LocalDate desde, LocalDate hasta);
@@ -31,5 +34,6 @@ public interface AusenciaRepository extends JpaRepository<Ausencia, Long> {
 
     List<Ausencia> findByTipoAusenciaOrderByFechaRegistroDesc(TipoAusencia tipoAusencia);
 
-    List<Ausencia> findByEstadoAndTipoAusenciaOrderByFechaRegistroDesc(EstadoAusencia estado, TipoAusencia tipoAusencia);
+    List<Ausencia> findByEstadoAndTipoAusenciaOrderByFechaRegistroDesc(EstadoAusencia estado,
+            TipoAusencia tipoAusencia);
 }

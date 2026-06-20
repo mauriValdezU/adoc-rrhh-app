@@ -190,4 +190,21 @@ public class PlanillaController {
 
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
+
+    @PostMapping("/{id}/eliminar")
+    public String eliminarPlanilla(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!isAuthenticated(session)) {
+            return "redirect:/login";
+        }
+
+        Optional<Planilla> planillaOpt = planillaRepository.findById(id);
+        if (planillaOpt.isPresent()) {
+            planillaRepository.delete(planillaOpt.get());
+            redirectAttributes.addFlashAttribute("success", "La planilla ha sido eliminada exitosamente.");
+        } else {
+            redirectAttributes.addFlashAttribute("error", "No se encontró la planilla especificada.");
+        }
+
+        return "redirect:/planillas";
+    }
 }

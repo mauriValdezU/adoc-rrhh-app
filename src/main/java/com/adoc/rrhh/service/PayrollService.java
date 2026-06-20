@@ -516,7 +516,7 @@ public class PayrollService {
      * - Ausencias justificadas con goce de salario
      */
     private int calcularDiasADescontar(Long empleadoId, LocalDate inicioQuincena, LocalDate finQuincena) {
-        List<com.adoc.rrhh.entity.Ausencia> ausencias = ausenciaRepository.findByEmpleadoIdAndFechaInicioBetween(
+        List<com.adoc.rrhh.entity.Ausencia> ausencias = ausenciaRepository.findOverlappingAusencias(
                 empleadoId, inicioQuincena, finQuincena);
 
         int diasDescuento = 0;
@@ -527,34 +527,53 @@ public class PayrollService {
                 continue;
             }
 
-            // Calcular cuántos días de esta ausencia caen dentro de la quincena
-            LocalDate inicioEfectivo = ausencia.getFechaInicio().isBefore(inicioQuincena)
-                    ? inicioQuincena : ausencia.getFechaInicio();
-            LocalDate finEfectivo = ausencia.getFechaFin().isAfter(finQuincena)
-                    ? finQuincena : ausencia.getFechaFin();
-            int diasEnQuincena = (int) java.time.temporal.ChronoUnit.DAYS.between(inicioEfectivo, finEfectivo) + 1;
-            if (diasEnQuincena <= 0) continue;
+            // Ajuste de mes comercial (mes de 30 días)
+            // Si el mes tiene 31 días, ignoramos el día 31 para que no genere un descuento extra injusto.
+            LocalDate finComercial = finQuincena;
+            if (finQuincena.getDayOfMonth() == 31) {
+                finComercial = finQuincena.minusDays(1);
+            }
 
             switch (ausencia.getTipoAusencia()) {
                 case INCAPACIDAD_ENFERMEDAD:
-                    // Patrono paga primeros 3 días, ISSS el resto → descontar solo días ISSS
-                    int diasIsss = ausencia.getDiasIsss() != null ? ausencia.getDiasIsss() : 0;
-                    // Proporción de días ISSS que caen en esta quincena
-                    int diasPatrono = ausencia.getDiasPatrono() != null ? ausencia.getDiasPatrono() : 0;
-                    int diasIsssEnQuincena = Math.max(diasEnQuincena - diasPatrono, 0);
-                    diasDescuento += diasIsssEnQuincena;
+                    // Patrono paga primeros días (usualmente 3) desde la fecha de inicio global de la ausencia
+                    int diasPatronoTotales = ausencia.getDiasPatrono() != null ? ausencia.getDiasPatrono() : 0;
+                    LocalDate finPatrono = ausencia.getFechaInicio().plusDays(Math.max(0, diasPatronoTotales - 1));
+                    
+                    // El ISSS cubre a partir del día siguiente al fin del periodo patronal
+                    LocalDate inicioIsss = diasPatronoTotales > 0 ? finPatrono.plusDays(1) : ausencia.getFechaInicio();
+                    
+                    // Si el periodo ISSS sobrepasa el fin de la ausencia, no hay descuento
+                    if (inicioIsss.isAfter(ausencia.getFechaFin())) {
+                        break; 
+                    }
+                    
+                    // Intersección del periodo ISSS con el mes actual (topado al día 30)
+                    LocalDate overlapStartIsss = inicioIsss.isBefore(inicioQuincena) ? inicioQuincena : inicioIsss;
+                    LocalDate overlapEndIsss = ausencia.getFechaFin().isAfter(finComercial) ? finComercial : ausencia.getFechaFin();
+                    
+                    if (!overlapStartIsss.isAfter(overlapEndIsss)) {
+                        int diasIsssEnMes = (int) java.time.temporal.ChronoUnit.DAYS.between(overlapStartIsss, overlapEndIsss) + 1;
+                        if (diasIsssEnMes > 0) {
+                            diasDescuento += diasIsssEnMes;
+                        }
+                    }
                     break;
 
                 case INCAPACIDAD_ACCIDENTE:
                 case INCAPACIDAD_MATERNIDAD:
-                    // ISSS cubre todos los días → descontar todos
-                    diasDescuento += diasEnQuincena;
-                    break;
-
                 case AUSENCIA_JUSTIFICADA_SIN_GOCE:
                 case AUSENCIA_INJUSTIFICADA:
-                    // No se paga salario → descontar todos
-                    diasDescuento += diasEnQuincena;
+                    // Se descuentan todos los días que caen en el mes actual (topado al día 30)
+                    LocalDate overlapStart = ausencia.getFechaInicio().isBefore(inicioQuincena) ? inicioQuincena : ausencia.getFechaInicio();
+                    LocalDate overlapEnd = ausencia.getFechaFin().isAfter(finComercial) ? finComercial : ausencia.getFechaFin();
+                    
+                    if (!overlapStart.isAfter(overlapEnd)) {
+                        int diasEnMes = (int) java.time.temporal.ChronoUnit.DAYS.between(overlapStart, overlapEnd) + 1;
+                        if (diasEnMes > 0) {
+                            diasDescuento += diasEnMes;
+                        }
+                    }
                     break;
 
                 case AUSENCIA_JUSTIFICADA_CON_GOCE:
