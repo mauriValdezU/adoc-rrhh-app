@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
+
 <head>
     <th:block th:replace="~{layout :: head-assets}" />
     <title>Nuevo Empleado — Sistema de Planillas ADOC</title>
 </head>
+
 <body>
 
     <!-- ═══ Sidebar ═══ -->
@@ -19,14 +21,21 @@
         <main class="content-area">
 
             <div class="page-header-actions" style="margin-bottom: 1.75rem;">
-                <h1 class="page-title">Registrar Nuevo Empleado</h1>
-                <p class="page-subtitle" style="margin-bottom: 0;">Complete la información requerida para dar de alta a un nuevo empleado</p>
+                <h1 class="page-title"
+                    th:text="${empleado.id == null ? 'Registrar Nuevo Empleado' : 'Editar Empleado'}">Registrar Nuevo
+                    Empleado</h1>
+                <p class="page-subtitle" style="margin-bottom: 0;"
+                    th:text="${empleado.id == null ? 'Complete la información requerida para dar de alta a un nuevo empleado' : 'Actualice la información del empleado seleccionado'}">
+                    Complete la información requerida para dar de alta a un nuevo empleado</p>
             </div>
 
             <div class="card animate-in">
                 <div class="card-body">
-                    <form th:action="@{/empleados/nuevo}" th:object="${empleado}" method="post" class="form-grid">
-                        
+                    <form
+                        th:action="@{${empleado.id == null ? '/empleados/nuevo' : '/empleados/' + empleado.id + '/editar'}}"
+                        th:object="${empleado}" method="post" class="form-grid">
+                        <input type="hidden" th:field="*{id}">
+
                         <!-- ─── Bloque: Datos Personales ─── -->
                         <div class="form-section">
                             <h3 class="section-title">Datos Personales</h3>
@@ -37,10 +46,11 @@
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label for="apellidos">Apellidos</label>
-                                    <input type="text" class="form-control" id="apellidos" th:field="*{apellidos}" required>
+                                    <input type="text" class="form-control" id="apellidos" th:field="*{apellidos}"
+                                        required>
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-12 form-group">
                                     <label for="direccion">Dirección</label>
@@ -54,8 +64,8 @@
                                     <input type="text" class="form-control" id="dui" th:field="*{dui}" required>
                                 </div>
                                 <div class="col-md-4 form-group">
-                                    <label for="nit">NIT</label>
-                                    <input type="text" class="form-control" id="nit" th:field="*{nit}" required>
+                                    <label for="nit">NIT (Opcional)</label>
+                                    <input type="text" class="form-control" id="nit" th:field="*{nit}">
                                 </div>
                                 <div class="col-md-4 form-group">
                                     <label for="telefono">Teléfono</label>
@@ -66,7 +76,8 @@
                             <div class="row">
                                 <div class="col-md-6 form-group">
                                     <label for="fechaNacimiento">Fecha de Nacimiento</label>
-                                    <input type="date" class="form-control" id="fechaNacimiento" th:field="*{fechaNacimiento}">
+                                    <input type="date" class="form-control" id="fechaNacimiento"
+                                        th:field="*{fechaNacimiento}">
                                 </div>
                             </div>
                         </div>
@@ -81,22 +92,26 @@
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label for="departamento">Departamento</label>
-                                    <input type="text" class="form-control" id="departamento" th:field="*{departamento}" required>
+                                    <input type="text" class="form-control" id="departamento" th:field="*{departamento}"
+                                        required>
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-4 form-group">
                                     <label for="fechaIngreso">Fecha de Ingreso</label>
-                                    <input type="date" class="form-control" id="fechaIngreso" th:field="*{fechaIngreso}" required>
+                                    <input type="date" class="form-control" id="fechaIngreso" th:field="*{fechaIngreso}"
+                                        required>
                                 </div>
                                 <div class="col-md-4 form-group">
                                     <label for="tipoContrato">Tipo de Contrato</label>
-                                    <input type="text" class="form-control" id="tipoContrato" th:field="*{tipoContrato}">
+                                    <input type="text" class="form-control" id="tipoContrato"
+                                        th:field="*{tipoContrato}">
                                 </div>
                                 <div class="col-md-4 form-group">
                                     <label for="salarioBase">Salario Mensual ($)</label>
-                                    <input type="number" step="0.01" class="form-control" id="salarioBase" th:field="*{salarioBase}" required>
+                                    <input type="number" step="0.01" class="form-control" id="salarioBase"
+                                        th:field="*{salarioBase}" required>
                                 </div>
                             </div>
 
@@ -104,17 +119,28 @@
                                 <div class="col-md-6 form-group">
                                     <label for="tipoJornada">Tipo de Jornada</label>
                                     <select class="form-control" id="tipoJornada" th:field="*{tipoJornada}" required>
-                                        <option th:each="jornada : ${tiposJornada}" 
-                                                th:value="${jornada}" 
-                                                th:text="${jornada == T(com.adoc.rrhh.entity.enums.TipoJornada).DIURNA ? 'Diurna' : 'Nocturna'}">
+                                        <option th:each="jornada : ${tiposJornada}" th:value="${jornada}"
+                                            th:text="${jornada == T(com.adoc.rrhh.entity.enums.TipoJornada).DIURNA ? 'Diurna' : 'Nocturna'}">
                                         </option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label for="numeroIsss">Número ISSS (Opcional)</label>
+                                    <input type="text" class="form-control" id="numeroIsss" th:field="*{numeroIsss}">
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label for="numeroAfp">Número AFP (Opcional)</label>
+                                    <input type="text" class="form-control" id="numeroAfp" th:field="*{numeroAfp}">
                                 </div>
                             </div>
                         </div>
 
                         <div class="form-actions" style="margin-top: 2rem; display: flex; justify-content: flex-end;">
-                            <button type="submit" class="btn-action" style="width: auto; padding: 0.8rem 2rem;">
+                            <button type="submit" class="btn-action" style="width: auto; padding: 0.8rem 2rem;"
+                                th:text="${empleado.id == null ? 'Guardar Empleado' : 'Actualizar Empleado'}">
                                 Guardar Empleado
                             </button>
                         </div>
@@ -127,4 +153,5 @@
     </div>
 
 </body>
+
 </html>

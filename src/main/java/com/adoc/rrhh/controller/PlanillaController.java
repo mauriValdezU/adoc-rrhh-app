@@ -40,10 +40,10 @@ public class PlanillaController {
     private final PayrollService payrollService;
     private final PdfGenerationService pdfGenerationService;
 
-    public PlanillaController(PlanillaRepository planillaRepository, 
-                              EmpleadoRepository empleadoRepository,
-                              PayrollService payrollService,
-                              PdfGenerationService pdfGenerationService) {
+    public PlanillaController(PlanillaRepository planillaRepository,
+            EmpleadoRepository empleadoRepository,
+            PayrollService payrollService,
+            PdfGenerationService pdfGenerationService) {
         this.planillaRepository = planillaRepository;
         this.empleadoRepository = empleadoRepository;
         this.payrollService = payrollService;
@@ -57,7 +57,7 @@ public class PlanillaController {
 
     @GetMapping
     public String gestionarPlanilla(
-            @RequestParam(required = false) Long id, 
+            @RequestParam(required = false) Long id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             HttpSession session, Model model) {
@@ -67,14 +67,14 @@ public class PlanillaController {
 
         if (id == null) {
             org.springframework.data.domain.Page<Planilla> planillas = planillaRepository.findAll(
-                org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").descending())
-            );
+                    org.springframework.data.domain.PageRequest.of(page, size,
+                            org.springframework.data.domain.Sort.by("id").descending()));
             model.addAttribute("planillas", planillas);
             return "listar-planillas";
         }
 
         Planilla planilla = planillaRepository.findById(id).orElse(null);
-        
+
         if (planilla == null) {
             return "redirect:/planillas";
         }
@@ -85,32 +85,32 @@ public class PlanillaController {
         BigDecimal totalIsssEmpleado = BigDecimal.ZERO;
         BigDecimal totalAfpEmpleado = BigDecimal.ZERO;
         BigDecimal totalRenta = BigDecimal.ZERO;
-        
+
         BigDecimal totalIsssPatrono = BigDecimal.ZERO;
         BigDecimal totalAfpPatrono = BigDecimal.ZERO;
-        
+
         BigDecimal liquidoTotal = BigDecimal.ZERO;
 
         for (DetallePlanilla detalle : planilla.getDetalles()) {
             totalIsssEmpleado = totalIsssEmpleado.add(detalle.getDeduccionIsss());
             totalAfpEmpleado = totalAfpEmpleado.add(detalle.getDeduccionAfp());
             totalRenta = totalRenta.add(detalle.getDeduccionRenta());
-            
+
             totalIsssPatrono = totalIsssPatrono.add(detalle.getAportacionPatronalIsss());
             totalAfpPatrono = totalAfpPatrono.add(detalle.getAportacionPatronalAfp());
-            
+
             liquidoTotal = liquidoTotal.add(detalle.getSalarioNeto());
         }
 
-        model.addAttribute( "totalIsssEmpleado", totalIsssEmpleado);
+        model.addAttribute("totalIsssEmpleado", totalIsssEmpleado);
         model.addAttribute("totalAfpEmpleado", totalAfpEmpleado);
         model.addAttribute("totalRenta", totalRenta);
-        
+
         model.addAttribute("totalIsssPatrono", totalIsssPatrono);
         model.addAttribute("totalAfpPatrono", totalAfpPatrono);
-        
+
         model.addAttribute("liquidoTotal", liquidoTotal);
-        
+
         String nombrePeriodo;
         if (planilla.getTipoPlanilla() == TipoPlanilla.ORDINARIA) {
             nombrePeriodo = "Quincena " + planilla.getQuincena() + " - " + planilla.getPeriodo();
@@ -124,8 +124,9 @@ public class PlanillaController {
 
     @GetMapping("/generar")
     public String mostrarFormularioGeneracion(HttpSession session, Model model) {
-        if (!isAuthenticated(session)) return "redirect:/login";
-        
+        if (!isAuthenticated(session))
+            return "redirect:/login";
+
         List<Empleado> empleadosActivos = empleadoRepository.findByEstado(EstadoEmpleado.ACTIVO);
         model.addAttribute("empleados", empleadosActivos);
         return "generar-planilla";
@@ -133,12 +134,13 @@ public class PlanillaController {
 
     @PostMapping("/generar")
     public String procesarGeneracion(@RequestParam TipoPlanilla tipoPlanilla,
-                                     @RequestParam String periodo,
-                                     @RequestParam(required = false, defaultValue = "1") Integer quincena,
-                                     @RequestParam(required = false) java.util.List<Long> empleadoIds,
-                                     HttpSession session, RedirectAttributes redirectAttributes) {
-        if (!isAuthenticated(session)) return "redirect:/login";
-        
+            @RequestParam String periodo,
+            @RequestParam(required = false, defaultValue = "1") Integer quincena,
+            @RequestParam(required = false) java.util.List<Long> empleadoIds,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!isAuthenticated(session))
+            return "redirect:/login";
+
         if (empleadoIds == null || empleadoIds.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "Debe seleccionar al menos un empleado.");
             return "redirect:/planillas/generar";
@@ -166,8 +168,9 @@ public class PlanillaController {
 
     @GetMapping("/resumen")
     public String mostrarResumen(HttpSession session, Model model) {
-        if (!isAuthenticated(session)) return "redirect:/login";
-        
+        if (!isAuthenticated(session))
+            return "redirect:/login";
+
         if (!model.containsAttribute("resultadoGeneracion")) {
             return "redirect:/dashboard";
         }
@@ -190,7 +193,7 @@ public class PlanillaController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", "colillas_planilla_" + id + ".pdf");
-        
+
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 }

@@ -97,6 +97,13 @@ public class PayrollService {
                     resultado.agregarOmitido(empleado.getNombreCompleto(), "Fecha de ingreso posterior al periodo");
                     return false;
                 }
+                
+                if (ymIngreso.equals(ymPeriodo) && quincena != null && quincena == 1) {
+                    if (empleado.getFechaIngreso().getDayOfMonth() > 15) {
+                        resultado.agregarOmitido(empleado.getNombreCompleto(), "Fecha de ingreso posterior a la primera quincena");
+                        return false;
+                    }
+                }
             }
         }
 
@@ -137,7 +144,8 @@ public class PayrollService {
             if (!esEmpleadoValidoParaPeriodo(empleado, periodo, quincena, TipoPlanilla.ORDINARIA, resultado)) {
                 continue;
             }
-            DetallePlanilla detalle = calcularDetalleEmpleado(empleado, 0.0, BigDecimal.ZERO);
+            BigDecimal salarioProrrateado = calcularSalarioProrrateado(empleado, periodo, quincena);
+            DetallePlanilla detalle = calcularDetalleEmpleado(empleado, 0.0, BigDecimal.ZERO, salarioProrrateado);
             planilla.agregarDetalle(detalle);
             resultado.incrementarGenerados();
             tieneDetalles = true;
@@ -174,7 +182,8 @@ public class PayrollService {
             double horas = horasExtrasPorEmpleado != null
                     ? horasExtrasPorEmpleado.getOrDefault(empleado.getId(), 0.0)
                     : 0.0;
-            DetallePlanilla detalle = calcularDetalleEmpleado(empleado, horas, BigDecimal.ZERO);
+            BigDecimal salarioProrrateado = calcularSalarioProrrateado(empleado, periodo, quincena);
+            DetallePlanilla detalle = calcularDetalleEmpleado(empleado, horas, BigDecimal.ZERO, salarioProrrateado);
             planilla.agregarDetalle(detalle);
             resultado.incrementarGenerados();
             tieneDetalles = true;
@@ -378,6 +387,37 @@ public class PayrollService {
     // ════════════════════════════════════════════════════════════════════
     //  CÁLCULO POR EMPLEADO
 
+    private BigDecimal calcularSalarioProrrateado(Empleado empleado, String periodo, int quincena) {
+        if (empleado.getFechaIngreso() == null) {
+            return empleado.getSalarioBase().divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
+        }
+        
+        YearMonth ymPeriodo = YearMonth.parse(periodo, DateTimeFormatter.ofPattern("yyyy-MM"));
+        YearMonth ymIngreso = YearMonth.from(empleado.getFechaIngreso());
+        
+        if (!ymIngreso.equals(ymPeriodo)) {
+            // Ingresó antes de este mes
+            return empleado.getSalarioBase().divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
+        }
+        
+        int diaIngreso = empleado.getFechaIngreso().getDayOfMonth();
+        int diasTrabajados = 15; 
+        
+        if (quincena == 1) {
+            diasTrabajados = 15 - diaIngreso + 1;
+        } else if (quincena == 2) {
+            if (diaIngreso > 15) {
+                diasTrabajados = 30 - diaIngreso + 1; // Mes comercial de 30 días
+                if (diasTrabajados < 0) diasTrabajados = 0; // Si entra el día 31
+            } else {
+                diasTrabajados = 15; // Trabajó la segunda quincena completa
+            }
+        }
+        
+        BigDecimal salarioDiario = empleado.getSalarioBase().divide(DIAS_MES, 10, RoundingMode.HALF_UP);
+        return salarioDiario.multiply(BigDecimal.valueOf(diasTrabajados)).setScale(2, RoundingMode.HALF_UP);
+    }
+
     // ════════════════════════════════════════════════════════════════════
 
     /**
@@ -389,23 +429,22 @@ public class PayrollService {
      * @return DetallePlanilla con todos los cálculos realizados
      */
     public DetallePlanilla calcularDetalleEmpleado(Empleado empleado, double horasExtras,
-                                                    BigDecimal otrosIngresos) {
+                                                    BigDecimal otrosIngresos, BigDecimal salarioPeriodo) {
         DetallePlanilla detalle = new DetallePlanilla();
         detalle.setEmpleado(empleado);
 
-        BigDecimal salarioBase = empleado.getSalarioBase();
-        detalle.setSalarioBase(salarioBase);
+        detalle.setSalarioBase(salarioPeriodo);
         detalle.setHorasExtras(horasExtras);
 
-        // 1. Calcular monto de horas extras
-        BigDecimal montoHorasExtras = calcularHorasExtras(empleado.getTipoJornada(), salarioBase, horasExtras);
+        // 1. Calcular monto de horas extras (utilizando el salario base mensual para el valor hora)
+        BigDecimal montoHorasExtras = calcularHorasExtras(empleado.getTipoJornada(), empleado.getSalarioBase(), horasExtras);
         detalle.setMontoHorasExtras(montoHorasExtras);
 
         // 2. Otros ingresos
         detalle.setOtrosIngresos(otrosIngresos != null ? otrosIngresos : BigDecimal.ZERO);
 
         // 3. Total devengado
-        BigDecimal totalDevengado = salarioBase.add(montoHorasExtras).add(detalle.getOtrosIngresos());
+        BigDecimal totalDevengado = salarioPeriodo.add(montoHorasExtras).add(detalle.getOtrosIngresos());
         detalle.setTotalDevengado(totalDevengado);
 
         // 4. Deducciones del empleado

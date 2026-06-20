@@ -68,4 +68,29 @@ public class EmpleadoController {
         empleadoRepository.save(empleado);
         return "redirect:/empleados";
     }
+
+    @GetMapping("/{id}/editar")
+    public String mostrarFormularioEditar(@org.springframework.web.bind.annotation.PathVariable Long id, HttpSession session, Model model) {
+        if (!isAuthenticated(session)) {
+            return "redirect:/login";
+        }
+        
+        Empleado empleado = empleadoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("ID de empleado inválido:" + id));
+        model.addAttribute("empleado", empleado);
+        model.addAttribute("tiposJornada", TipoJornada.values());
+        model.addAttribute("estados", EstadoEmpleado.values());
+        
+        return "nuevo-empleado";
+    }
+
+    @PostMapping("/{id}/editar")
+    public String actualizarEmpleado(@org.springframework.web.bind.annotation.PathVariable Long id, @ModelAttribute("empleado") Empleado empleado, HttpSession session) {
+        if (!isAuthenticated(session)) {
+            return "redirect:/login";
+        }
+        
+        empleado.setId(id);
+        empleadoRepository.save(empleado);
+        return "redirect:/empleados";
+    }
 }

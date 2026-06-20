@@ -742,3 +742,88 @@ a { text-decoration: none; color: inherit; }
     border-color: #e8ecf0;
     cursor: not-allowed;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ALERT BOXES
+   ═══════════════════════════════════════════════════════════════════════ */
+.alert-box {
+    padding: 0.85rem 1.15rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    border: 1px solid transparent;
+}
+
+.alert-box.alert-success {
+    background: rgba(16,185,129,0.08);
+    border-color: rgba(16,185,129,0.2);
+    color: #065f46;
+}
+
+.alert-box.alert-danger {
+    background: rgba(239,68,68,0.08);
+    border-color: rgba(239,68,68,0.2);
+    color: #991b1b;
+}
+
+.alert-box.alert-info {
+    background: rgba(59,130,246,0.08);
+    border-color: rgba(59,130,246,0.2);
+    color: #1e40af;
+}
+
+.alert-box.alert-warning {
+    background: rgba(245,158,11,0.08);
+    border-color: rgba(245,158,11,0.2);
+    color: #92400e;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SMALL ACTION BUTTONS (for table actions)
+   ═══════════════════════════════════════════════════════════════════════ */
+.btn-action-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #ffffff;
+    line-height: 1;
+}
+
+.btn-action-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+.btn-sm-success {
+    background: #10b981;
+}
+
+.btn-sm-success:hover {
+    background: #059669;
+}
+
+.btn-sm-danger {
+    background: #ef4444;
+}
+
+.btn-sm-danger:hover {
+    background: #dc2626;
+}
+
+.btn-sm-primary {
+    background: #3b82f6;
+}
+
+.btn-sm-primary:hover {
+    background: #2563eb;
+}
+

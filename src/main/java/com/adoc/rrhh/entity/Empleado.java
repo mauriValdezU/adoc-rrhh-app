@@ -26,6 +26,7 @@ public class Empleado {
     @Column(unique = true, length = 17)
     private String nit;
 
+    @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd")
     @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
 
@@ -41,6 +42,7 @@ public class Empleado {
     @Column(length = 100)
     private String departamento;
 
+    @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd")
     @Column(name = "fecha_ingreso")
     private LocalDate fechaIngreso;
 

@@ -45,6 +45,7 @@
                                 <th>Fecha Ingreso</th>
                                 <th>Salario</th>
                                 <th>Estado</th>
+                                <th style="text-align: right;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -62,9 +63,12 @@
                                           th:text="${emp.estado}">ESTADO
                                     </span>
                                 </td>
+                                <td style="text-align: right;">
+                                    <a th:href="@{/empleados/{id}/editar(id=${emp.id})}" class="btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Editar</a>
+                                </td>
                             </tr>
                             <tr th:if="${empleados.empty}">
-                                <td colspan="7" style="text-align: center; padding: 2rem; color: #888;">
+                                <td colspan="8" style="text-align: center; padding: 2rem; color: #888;">
                                     No hay empleados registrados actualmente.
                                 </td>
                             </tr>
