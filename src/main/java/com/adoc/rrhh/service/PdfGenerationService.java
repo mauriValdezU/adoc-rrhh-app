@@ -64,8 +64,14 @@ public class PdfGenerationService {
 
                 // --- INGRESOS ---
                 addSectionHeader(table, "INGRESOS", headerFont);
-                addRow(table, "Salario Base Quincenal", cf.format(detalle.getSalarioBase().divide(new java.math.BigDecimal("2"), java.math.RoundingMode.HALF_UP)), normalFont, amountFont);
-                addRow(table, "Otros Ingresos / Extras", cf.format(detalle.getOtrosIngresos()), normalFont, amountFont);
+                addRow(table, "Salario Base Mensual", cf.format(detalle.getSalarioBase()), normalFont, amountFont);
+                
+                if (detalle.getDiasAusenciaDescontados() > 0) {
+                    Font redFont = FontFactory.getFont(FontFactory.HELVETICA, 10, java.awt.Color.RED);
+                    addRow(table, "(-) Descuento por Ausencias (" + detalle.getDiasAusenciaDescontados() + " días)", "-" + cf.format(detalle.getMontoDescuentoAusencias()), redFont, amountFont);
+                }
+                
+                addRow(table, "(+) Otros Ingresos / Extras", cf.format(detalle.getMontoHorasExtras().add(detalle.getOtrosIngresos())), normalFont, amountFont);
                 addRow(table, "TOTAL DEVENGADO", cf.format(detalle.getTotalDevengado()), boldFont, amountFont);
 
                 // --- RETENCIONES ---

@@ -13,6 +13,6 @@ public interface DetallePlanillaRepository extends JpaRepository<DetallePlanilla
 
     List<DetallePlanilla> findByEmpleadoId(Long empleadoId);
 
-    boolean existsByEmpleadoIdAndPlanillaPeriodoAndPlanillaQuincenaAndPlanillaTipoPlanilla(
-            Long empleadoId, String periodo, Integer quincena, com.adoc.rrhh.entity.enums.TipoPlanilla tipoPlanilla);
+    boolean existsByEmpleadoIdAndPlanillaPeriodoAndPlanillaTipoPlanilla(
+            Long empleadoId, String periodo, com.adoc.rrhh.entity.enums.TipoPlanilla tipoPlanilla);
 }

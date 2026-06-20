@@ -72,16 +72,19 @@ public class PayrollService {
     private final EmpleadoRepository empleadoRepository;
     private final PlanillaRepository planillaRepository;
     private final DetallePlanillaRepository detallePlanillaRepository;
+    private final com.adoc.rrhh.repository.AusenciaRepository ausenciaRepository;
 
     public PayrollService(EmpleadoRepository empleadoRepository,
                           PlanillaRepository planillaRepository,
-                          DetallePlanillaRepository detallePlanillaRepository) {
+                          DetallePlanillaRepository detallePlanillaRepository,
+                          com.adoc.rrhh.repository.AusenciaRepository ausenciaRepository) {
         this.empleadoRepository = empleadoRepository;
         this.planillaRepository = planillaRepository;
         this.detallePlanillaRepository = detallePlanillaRepository;
+        this.ausenciaRepository = ausenciaRepository;
     }
 
-    private boolean esEmpleadoValidoParaPeriodo(Empleado empleado, String periodo, Integer quincena, TipoPlanilla tipoPlanilla, ResultadoPlanillaDto resultado) {
+    private boolean esEmpleadoValidoParaPeriodo(Empleado empleado, String periodo, TipoPlanilla tipoPlanilla, ResultadoPlanillaDto resultado) {
         if (empleado.getFechaIngreso() != null) {
             if (periodo.length() == 4) {
                 int anioIngreso = empleado.getFechaIngreso().getYear();
@@ -97,18 +100,11 @@ public class PayrollService {
                     resultado.agregarOmitido(empleado.getNombreCompleto(), "Fecha de ingreso posterior al periodo");
                     return false;
                 }
-                
-                if (ymIngreso.equals(ymPeriodo) && quincena != null && quincena == 1) {
-                    if (empleado.getFechaIngreso().getDayOfMonth() > 15) {
-                        resultado.agregarOmitido(empleado.getNombreCompleto(), "Fecha de ingreso posterior a la primera quincena");
-                        return false;
-                    }
-                }
             }
         }
 
-        boolean existe = detallePlanillaRepository.existsByEmpleadoIdAndPlanillaPeriodoAndPlanillaQuincenaAndPlanillaTipoPlanilla(
-                empleado.getId(), periodo, quincena, tipoPlanilla);
+        boolean existe = detallePlanillaRepository.existsByEmpleadoIdAndPlanillaPeriodoAndPlanillaTipoPlanilla(
+                empleado.getId(), periodo, tipoPlanilla);
         if (existe) {
             resultado.agregarOmitido(empleado.getNombreCompleto(), "La planilla ya fue generada para este periodo");
             return false;
@@ -125,27 +121,44 @@ public class PayrollService {
      * Genera una planilla ordinaria para todos los empleados activos.
      *
      * @param periodo   periodo en formato "YYYY-MM"
-     * @param quincena  1 = primera quincena, 2 = segunda quincena
      * @return la planilla generada con todos sus detalles calculados
      */
     @Transactional
-    public ResultadoPlanillaDto generarPlanillaOrdinaria(String periodo, int quincena, List<Long> empleadoIds) {
+    public ResultadoPlanillaDto generarPlanillaOrdinaria(String periodo, List<Long> empleadoIds) {
         ResultadoPlanillaDto resultado = new ResultadoPlanillaDto();
         Planilla planilla = new Planilla();
         planilla.setPeriodo(periodo);
-        planilla.setQuincena(quincena);
         planilla.setTipoPlanilla(TipoPlanilla.ORDINARIA);
         planilla.setFechaGeneracion(LocalDate.now());
 
         List<Empleado> empleadosAProcesar = empleadoRepository.findAllById(empleadoIds);
 
+        // Determinar rango de fechas del mes completo
+        YearMonth ym = YearMonth.parse(periodo, DateTimeFormatter.ofPattern("yyyy-MM"));
+        LocalDate inicioMes = ym.atDay(1);
+        LocalDate finMes = ym.atEndOfMonth();
+
         boolean tieneDetalles = false;
         for (Empleado empleado : empleadosAProcesar) {
-            if (!esEmpleadoValidoParaPeriodo(empleado, periodo, quincena, TipoPlanilla.ORDINARIA, resultado)) {
+            if (!esEmpleadoValidoParaPeriodo(empleado, periodo, TipoPlanilla.ORDINARIA, resultado)) {
                 continue;
             }
-            BigDecimal salarioProrrateado = calcularSalarioProrrateado(empleado, periodo, quincena);
-            DetallePlanilla detalle = calcularDetalleEmpleado(empleado, 0.0, BigDecimal.ZERO, salarioProrrateado);
+            BigDecimal salarioProrrateado = calcularSalarioProrrateado(empleado, periodo);
+
+            // Descontar días de ausencia aprobadas en el período
+            int diasADescontar = calcularDiasADescontar(empleado.getId(), inicioMes, finMes);
+            BigDecimal montoDescuento = BigDecimal.ZERO;
+            if (diasADescontar > 0) {
+                BigDecimal salarioDiario = empleado.getSalarioBase().divide(DIAS_MES, 10, RoundingMode.HALF_UP);
+                montoDescuento = salarioDiario.multiply(BigDecimal.valueOf(diasADescontar)).setScale(2, RoundingMode.HALF_UP);
+                salarioProrrateado = salarioProrrateado.subtract(montoDescuento);
+                if (salarioProrrateado.compareTo(BigDecimal.ZERO) < 0) {
+                    salarioProrrateado = BigDecimal.ZERO;
+                    montoDescuento = empleado.getSalarioBase(); // Cap the discount to max salary
+                }
+            }
+
+            DetallePlanilla detalle = calcularDetalleEmpleado(empleado, 0.0, BigDecimal.ZERO, salarioProrrateado, diasADescontar, montoDescuento);
             planilla.agregarDetalle(detalle);
             resultado.incrementarGenerados();
             tieneDetalles = true;
@@ -163,27 +176,45 @@ public class PayrollService {
      * El parámetro horasExtrasPorEmpleado puede ser null para empleados sin horas extras.
      */
     @Transactional
-    public ResultadoPlanillaDto generarPlanillaConHorasExtras(String periodo, int quincena, List<Long> empleadoIds,
+    public ResultadoPlanillaDto generarPlanillaConHorasExtras(String periodo, List<Long> empleadoIds,
                                                    java.util.Map<Long, Double> horasExtrasPorEmpleado) {
         ResultadoPlanillaDto resultado = new ResultadoPlanillaDto();
         Planilla planilla = new Planilla();
         planilla.setPeriodo(periodo);
-        planilla.setQuincena(quincena);
         planilla.setTipoPlanilla(TipoPlanilla.ORDINARIA);
         planilla.setFechaGeneracion(LocalDate.now());
 
         List<Empleado> empleadosAProcesar = empleadoRepository.findAllById(empleadoIds);
 
+        // Determinar rango de fechas del mes completo
+        YearMonth ym = YearMonth.parse(periodo, DateTimeFormatter.ofPattern("yyyy-MM"));
+        LocalDate inicioMes = ym.atDay(1);
+        LocalDate finMes = ym.atEndOfMonth();
+
         boolean tieneDetalles = false;
         for (Empleado empleado : empleadosAProcesar) {
-            if (!esEmpleadoValidoParaPeriodo(empleado, periodo, quincena, TipoPlanilla.ORDINARIA, resultado)) {
+            if (!esEmpleadoValidoParaPeriodo(empleado, periodo, TipoPlanilla.ORDINARIA, resultado)) {
                 continue;
             }
             double horas = horasExtrasPorEmpleado != null
                     ? horasExtrasPorEmpleado.getOrDefault(empleado.getId(), 0.0)
                     : 0.0;
-            BigDecimal salarioProrrateado = calcularSalarioProrrateado(empleado, periodo, quincena);
-            DetallePlanilla detalle = calcularDetalleEmpleado(empleado, horas, BigDecimal.ZERO, salarioProrrateado);
+            BigDecimal salarioProrrateado = calcularSalarioProrrateado(empleado, periodo);
+
+            // Descontar días de ausencia aprobadas en el período
+            int diasADescontar = calcularDiasADescontar(empleado.getId(), inicioMes, finMes);
+            BigDecimal montoDescuento = BigDecimal.ZERO;
+            if (diasADescontar > 0) {
+                BigDecimal salarioDiario = empleado.getSalarioBase().divide(DIAS_MES, 10, RoundingMode.HALF_UP);
+                montoDescuento = salarioDiario.multiply(BigDecimal.valueOf(diasADescontar)).setScale(2, RoundingMode.HALF_UP);
+                salarioProrrateado = salarioProrrateado.subtract(montoDescuento);
+                if (salarioProrrateado.compareTo(BigDecimal.ZERO) < 0) {
+                    salarioProrrateado = BigDecimal.ZERO;
+                    montoDescuento = empleado.getSalarioBase(); // Cap the discount to max salary
+                }
+            }
+
+            DetallePlanilla detalle = calcularDetalleEmpleado(empleado, horas, BigDecimal.ZERO, salarioProrrateado, diasADescontar, montoDescuento);
             planilla.agregarDetalle(detalle);
             resultado.incrementarGenerados();
             tieneDetalles = true;
@@ -205,7 +236,6 @@ public class PayrollService {
         ResultadoPlanillaDto resultado = new ResultadoPlanillaDto();
         Planilla planilla = new Planilla();
         planilla.setPeriodo(periodo);
-        planilla.setQuincena(0); // 0 indica que es un pago único en el periodo
         planilla.setTipoPlanilla(TipoPlanilla.AGUINALDO);
         planilla.setFechaGeneracion(LocalDate.now());
 
@@ -214,7 +244,7 @@ public class PayrollService {
 
         boolean tieneDetalles = false;
         for (Empleado empleado : empleadosAProcesar) {
-            if (!esEmpleadoValidoParaPeriodo(empleado, periodo, 0, TipoPlanilla.AGUINALDO, resultado)) {
+            if (!esEmpleadoValidoParaPeriodo(empleado, periodo, TipoPlanilla.AGUINALDO, resultado)) {
                 continue;
             }
             DetallePlanilla detalle = new DetallePlanilla();
@@ -282,7 +312,6 @@ public class PayrollService {
         ResultadoPlanillaDto resultado = new ResultadoPlanillaDto();
         Planilla planilla = new Planilla();
         planilla.setPeriodo(periodo);
-        planilla.setQuincena(0);
         planilla.setTipoPlanilla(TipoPlanilla.VACACIONES);
         planilla.setFechaGeneracion(LocalDate.now());
 
@@ -290,7 +319,7 @@ public class PayrollService {
 
         boolean tieneDetalles = false;
         for (Empleado empleado : empleadosAProcesar) {
-            if (!esEmpleadoValidoParaPeriodo(empleado, periodo, 0, TipoPlanilla.VACACIONES, resultado)) {
+            if (!esEmpleadoValidoParaPeriodo(empleado, periodo, TipoPlanilla.VACACIONES, resultado)) {
                 continue;
             }
             DetallePlanilla detalle = new DetallePlanilla();
@@ -334,7 +363,6 @@ public class PayrollService {
         ResultadoPlanillaDto resultado = new ResultadoPlanillaDto();
         Planilla planilla = new Planilla();
         planilla.setPeriodo(periodo);
-        planilla.setQuincena(0);
         planilla.setTipoPlanilla(TipoPlanilla.PLANILLA_25);
         planilla.setFechaGeneracion(LocalDate.now());
 
@@ -343,7 +371,7 @@ public class PayrollService {
 
         boolean tieneDetalles = false;
         for (Empleado empleado : empleadosAProcesar) {
-            if (!esEmpleadoValidoParaPeriodo(empleado, periodo, 0, TipoPlanilla.PLANILLA_25, resultado)) {
+            if (!esEmpleadoValidoParaPeriodo(empleado, periodo, TipoPlanilla.PLANILLA_25, resultado)) {
                 continue;
             }
             DetallePlanilla detalle = new DetallePlanilla();
@@ -387,32 +415,24 @@ public class PayrollService {
     // ════════════════════════════════════════════════════════════════════
     //  CÁLCULO POR EMPLEADO
 
-    private BigDecimal calcularSalarioProrrateado(Empleado empleado, String periodo, int quincena) {
+    private BigDecimal calcularSalarioProrrateado(Empleado empleado, String periodo) {
         if (empleado.getFechaIngreso() == null) {
-            return empleado.getSalarioBase().divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
+            return empleado.getSalarioBase();
         }
         
         YearMonth ymPeriodo = YearMonth.parse(periodo, DateTimeFormatter.ofPattern("yyyy-MM"));
         YearMonth ymIngreso = YearMonth.from(empleado.getFechaIngreso());
         
         if (!ymIngreso.equals(ymPeriodo)) {
-            // Ingresó antes de este mes
-            return empleado.getSalarioBase().divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
+            // Ingresó antes de este mes, devenga el mes completo
+            return empleado.getSalarioBase();
         }
         
+        // Si ingresó este mismo mes, calcular proporcional
         int diaIngreso = empleado.getFechaIngreso().getDayOfMonth();
-        int diasTrabajados = 15; 
-        
-        if (quincena == 1) {
-            diasTrabajados = 15 - diaIngreso + 1;
-        } else if (quincena == 2) {
-            if (diaIngreso > 15) {
-                diasTrabajados = 30 - diaIngreso + 1; // Mes comercial de 30 días
-                if (diasTrabajados < 0) diasTrabajados = 0; // Si entra el día 31
-            } else {
-                diasTrabajados = 15; // Trabajó la segunda quincena completa
-            }
-        }
+        int diasTrabajados = 30 - diaIngreso + 1; 
+        if (diasTrabajados < 0) diasTrabajados = 0; // Por si ingresa el 31
+        if (diasTrabajados > 30) diasTrabajados = 30; // Limitar a mes comercial de 30 días
         
         BigDecimal salarioDiario = empleado.getSalarioBase().divide(DIAS_MES, 10, RoundingMode.HALF_UP);
         return salarioDiario.multiply(BigDecimal.valueOf(diasTrabajados)).setScale(2, RoundingMode.HALF_UP);
@@ -426,14 +446,20 @@ public class PayrollService {
      * @param empleado      el empleado
      * @param horasExtras   cantidad de horas extras trabajadas
      * @param otrosIngresos ingresos adicionales (bonos, comisiones, etc.)
+     * @param salarioPeriodo salario proporcional a los días laborados
+     * @param diasADescontar días de ausencias injustificadas o ISSS a descontar
+     * @param montoDescuento monto en $ descontado por las ausencias
      * @return DetallePlanilla con todos los cálculos realizados
      */
     public DetallePlanilla calcularDetalleEmpleado(Empleado empleado, double horasExtras,
-                                                    BigDecimal otrosIngresos, BigDecimal salarioPeriodo) {
+                                                    BigDecimal otrosIngresos, BigDecimal salarioPeriodo,
+                                                    int diasADescontar, BigDecimal montoDescuento) {
         DetallePlanilla detalle = new DetallePlanilla();
         detalle.setEmpleado(empleado);
 
-        detalle.setSalarioBase(salarioPeriodo);
+        detalle.setSalarioBase(empleado.getSalarioBase());
+        detalle.setDiasAusenciaDescontados(diasADescontar);
+        detalle.setMontoDescuentoAusencias(montoDescuento);
         detalle.setHorasExtras(horasExtras);
 
         // 1. Calcular monto de horas extras (utilizando el salario base mensual para el valor hora)
@@ -470,6 +496,73 @@ public class PayrollService {
         detalle.setAportacionPatronalAfp(calcularAfpPatronal(totalDevengado));
 
         return detalle;
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  DESCUENTO POR AUSENCIAS
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * Calcula los días a descontar del salario de un empleado basándose
+     * en las ausencias aprobadas que caen dentro del rango de la quincena.
+     *
+     * Se descuentan:
+     * - Días cubiertos por ISSS (enfermedad desde el 4° día, accidente, maternidad)
+     * - Días sin goce de salario (ausencia justificada sin goce)
+     * - Días injustificados
+     *
+     * NO se descuentan:
+     * - Días que paga el patrono en enfermedad común (primeros 3 días)
+     * - Ausencias justificadas con goce de salario
+     */
+    private int calcularDiasADescontar(Long empleadoId, LocalDate inicioQuincena, LocalDate finQuincena) {
+        List<com.adoc.rrhh.entity.Ausencia> ausencias = ausenciaRepository.findByEmpleadoIdAndFechaInicioBetween(
+                empleadoId, inicioQuincena, finQuincena);
+
+        int diasDescuento = 0;
+        for (com.adoc.rrhh.entity.Ausencia ausencia : ausencias) {
+            // Solo considerar ausencias aprobadas o finalizadas
+            if (ausencia.getEstado() != com.adoc.rrhh.entity.enums.EstadoAusencia.APROBADA
+                    && ausencia.getEstado() != com.adoc.rrhh.entity.enums.EstadoAusencia.FINALIZADA) {
+                continue;
+            }
+
+            // Calcular cuántos días de esta ausencia caen dentro de la quincena
+            LocalDate inicioEfectivo = ausencia.getFechaInicio().isBefore(inicioQuincena)
+                    ? inicioQuincena : ausencia.getFechaInicio();
+            LocalDate finEfectivo = ausencia.getFechaFin().isAfter(finQuincena)
+                    ? finQuincena : ausencia.getFechaFin();
+            int diasEnQuincena = (int) java.time.temporal.ChronoUnit.DAYS.between(inicioEfectivo, finEfectivo) + 1;
+            if (diasEnQuincena <= 0) continue;
+
+            switch (ausencia.getTipoAusencia()) {
+                case INCAPACIDAD_ENFERMEDAD:
+                    // Patrono paga primeros 3 días, ISSS el resto → descontar solo días ISSS
+                    int diasIsss = ausencia.getDiasIsss() != null ? ausencia.getDiasIsss() : 0;
+                    // Proporción de días ISSS que caen en esta quincena
+                    int diasPatrono = ausencia.getDiasPatrono() != null ? ausencia.getDiasPatrono() : 0;
+                    int diasIsssEnQuincena = Math.max(diasEnQuincena - diasPatrono, 0);
+                    diasDescuento += diasIsssEnQuincena;
+                    break;
+
+                case INCAPACIDAD_ACCIDENTE:
+                case INCAPACIDAD_MATERNIDAD:
+                    // ISSS cubre todos los días → descontar todos
+                    diasDescuento += diasEnQuincena;
+                    break;
+
+                case AUSENCIA_JUSTIFICADA_SIN_GOCE:
+                case AUSENCIA_INJUSTIFICADA:
+                    // No se paga salario → descontar todos
+                    diasDescuento += diasEnQuincena;
+                    break;
+
+                case AUSENCIA_JUSTIFICADA_CON_GOCE:
+                    // Con goce de salario → NO se descuenta
+                    break;
+            }
+        }
+        return diasDescuento;
     }
 
     // ════════════════════════════════════════════════════════════════════

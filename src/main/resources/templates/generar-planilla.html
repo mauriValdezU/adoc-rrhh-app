@@ -156,13 +156,6 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group" id="quincenaGroup">
-                            <label class="form-label" for="quincena">Quincena</label>
-                            <select id="quincena" name="quincena" class="form-control">
-                                <option value="1">Primera Quincena (1 - 15)</option>
-                                <option value="2">Segunda Quincena (16 - 30/31)</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
 
@@ -219,13 +212,10 @@
     <script>
         function toggleQuincena() {
             const tipo = document.getElementById('tipoPlanilla').value;
-            const group = document.getElementById('quincenaGroup');
             const mesSelect = document.getElementById('periodoMes');
             if (tipo === 'ORDINARIA') {
-                group.style.display = 'flex';
                 mesSelect.style.display = 'block';
             } else {
-                group.style.display = 'none';
                 mesSelect.style.display = 'none';
             }
             actualizarPeriodo();

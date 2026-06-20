@@ -35,9 +35,17 @@ public class DetallePlanilla {
     @Column(name = "otros_ingresos", precision = 10, scale = 2)
     private BigDecimal otrosIngresos = BigDecimal.ZERO;
 
-    /** salarioBase + montoHorasExtras + otrosIngresos */
+    /** salarioBase + montoHorasExtras + otrosIngresos - montoDescuentoAusencias */
     @Column(name = "total_devengado", precision = 10, scale = 2)
     private BigDecimal totalDevengado = BigDecimal.ZERO;
+
+    // ─── Descuentos por Ausencias ──────────────────────────────────────
+
+    @Column(name = "dias_ausencia_descontados")
+    private Integer diasAusenciaDescontados = 0;
+
+    @Column(name = "monto_descuento_ausencias", precision = 10, scale = 2)
+    private BigDecimal montoDescuentoAusencias = BigDecimal.ZERO;
 
     // ─── Deducciones del empleado ───────────────────────────────────────
 
@@ -135,6 +143,22 @@ public class DetallePlanilla {
 
     public void setTotalDevengado(BigDecimal totalDevengado) {
         this.totalDevengado = totalDevengado;
+    }
+
+    public Integer getDiasAusenciaDescontados() {
+        return diasAusenciaDescontados;
+    }
+
+    public void setDiasAusenciaDescontados(Integer diasAusenciaDescontados) {
+        this.diasAusenciaDescontados = diasAusenciaDescontados;
+    }
+
+    public BigDecimal getMontoDescuentoAusencias() {
+        return montoDescuentoAusencias;
+    }
+
+    public void setMontoDescuentoAusencias(BigDecimal montoDescuentoAusencias) {
+        this.montoDescuentoAusencias = montoDescuentoAusencias;
     }
 
     public BigDecimal getDeduccionIsss() {

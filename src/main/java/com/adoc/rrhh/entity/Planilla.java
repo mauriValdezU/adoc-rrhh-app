@@ -18,10 +18,6 @@ public class Planilla {
     @Column(nullable = false, length = 7)
     private String periodo;
 
-    /** 1 = primera quincena, 2 = segunda quincena */
-    @Column(nullable = false)
-    private Integer quincena;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_planilla", nullable = false, length = 15)
     private TipoPlanilla tipoPlanilla;
@@ -51,14 +47,6 @@ public class Planilla {
 
     public void setPeriodo(String periodo) {
         this.periodo = periodo;
-    }
-
-    public Integer getQuincena() {
-        return quincena;
-    }
-
-    public void setQuincena(Integer quincena) {
-        this.quincena = quincena;
     }
 
     public TipoPlanilla getTipoPlanilla() {

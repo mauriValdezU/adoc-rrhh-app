@@ -43,7 +43,6 @@
                             <tr>
                                 <th>Periodo</th>
                                 <th>Tipo</th>
-                                <th>Quincena</th>
                                 <th>Empleados</th>
                                 <th>Fecha Generación</th>
                                 <th style="text-align: right;">Acciones</th>
@@ -57,7 +56,6 @@
                                           th:classappend="${p.tipoPlanilla.name() == 'ORDINARIA'} ? 'badge-primary' : 'badge-warning'" 
                                           th:text="${p.tipoPlanilla}">ORDINARIA</span>
                                 </td>
-                                <td th:text="${p.quincena > 0 ? p.quincena : 'N/A'}">1</td>
                                 <td th:text="${#lists.size(p.detalles)}">0</td>
                                 <td th:text="${#temporals.format(p.fechaGeneracion, 'dd/MM/yyyy')}">18/06/2026</td>
                                 <td style="text-align: right;">
@@ -65,7 +63,7 @@
                                 </td>
                             </tr>
                             <tr th:if="${planillas.empty}">
-                                <td colspan="6" style="text-align: center; padding: 2rem; color: #888;">No hay planillas generadas todavía.</td>
+                                <td colspan="5" style="text-align: center; padding: 2rem; color: #888;">No hay planillas generadas todavía.</td>
                             </tr>
                         </tbody>
                     </table>

@@ -11,8 +11,7 @@ import java.util.Optional;
 @Repository
 public interface PlanillaRepository extends JpaRepository<Planilla, Long> {
 
-    Optional<Planilla> findFirstByPeriodoAndQuincenaAndTipoPlanilla(String periodo, Integer quincena,
-            TipoPlanilla tipoPlanilla);
+    List<Planilla> findByPeriodoAndTipoPlanilla(String periodo, TipoPlanilla tipoPlanilla);
 
     List<Planilla> findByPeriodo(String periodo);
 

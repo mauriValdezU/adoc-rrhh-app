@@ -111,12 +111,7 @@ public class PlanillaController {
 
         model.addAttribute("liquidoTotal", liquidoTotal);
 
-        String nombrePeriodo;
-        if (planilla.getTipoPlanilla() == TipoPlanilla.ORDINARIA) {
-            nombrePeriodo = "Quincena " + planilla.getQuincena() + " - " + planilla.getPeriodo();
-        } else {
-            nombrePeriodo = planilla.getTipoPlanilla().name() + " - " + planilla.getPeriodo();
-        }
+        String nombrePeriodo = planilla.getTipoPlanilla().name() + " - " + planilla.getPeriodo();
         model.addAttribute("nombrePeriodo", nombrePeriodo);
 
         return "gestionar-planilla";
@@ -135,7 +130,6 @@ public class PlanillaController {
     @PostMapping("/generar")
     public String procesarGeneracion(@RequestParam TipoPlanilla tipoPlanilla,
             @RequestParam String periodo,
-            @RequestParam(required = false, defaultValue = "1") Integer quincena,
             @RequestParam(required = false) java.util.List<Long> empleadoIds,
             HttpSession session, RedirectAttributes redirectAttributes) {
         if (!isAuthenticated(session))
@@ -149,7 +143,7 @@ public class PlanillaController {
         ResultadoPlanillaDto resultado = null;
         switch (tipoPlanilla) {
             case ORDINARIA:
-                resultado = payrollService.generarPlanillaOrdinaria(periodo, quincena, empleadoIds);
+                resultado = payrollService.generarPlanillaOrdinaria(periodo, empleadoIds);
                 break;
             case AGUINALDO:
                 resultado = payrollService.generarPlanillaAguinaldo(periodo, empleadoIds);
